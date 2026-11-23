@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "brain-research-analyser"
+version = "0.1.0"
+description = "Local-first WorldQuant BRAIN alpha research ledger"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+brain-research = "brain_research.store:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

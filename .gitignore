@@ -1,0 +1,12 @@
+# Local account settings and secrets
+config/baseline.json
+.env
+*.cookie
+*credentials*.json
+*session*.json
+
+# Local research data
+data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

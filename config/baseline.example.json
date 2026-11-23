@@ -1,0 +1,15 @@
+{
+  "profile_id": "local_baseline",
+  "instrument_type": "EQUITY",
+  "region": "SET_REGION",
+  "universe": "SET_UNIVERSE",
+  "delay": 1,
+  "language": "FASTEXPR",
+  "neutralization": "SET_NEUTRALIZATION",
+  "decay": 0,
+  "truncation": 0.08,
+  "pasteurization": "ON",
+  "unit_handling": "VERIFY",
+  "nan_handling": "OFF",
+  "source": "local user configuration; confirm in BRAIN before use"
+}
