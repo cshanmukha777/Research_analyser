@@ -342,6 +342,43 @@ def record_result(args: argparse.Namespace) -> None:
     print(f"Recorded supplied BRAIN result {args.simulation_id}; confirm its evidence reference.")
 
 
+def record_correlation(args: argparse.Namespace) -> None:
+    if args.status == "MEASURED" and (
+        args.value is None or args.observations is None or not args.source_ref
+    ):
+        raise ValueError("MEASURED correlation requires value, observations, and source reference")
+    with database(args.db) as conn:
+        if conn.execute("SELECT 1 FROM candidates WHERE candidate_id = ?",
+                        (args.candidate_id,)).fetchone() is None:
+            raise ValueError(f"unknown candidate: {args.candidate_id}")
+        conn.execute(
+            """INSERT INTO correlations
+               (candidate_id, comparison_kind, compared_to, value, status, observations,
+                window_start, window_end, source_ref, measured_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (args.candidate_id, args.kind, args.compared_to, args.value, args.status,
+             args.observations, args.window_start, args.window_end, args.source_ref, now()),
+        )
+    print(f"Recorded {args.status.lower()} {args.kind.lower()} correlation.")
+
+
+def record_submission(args: argparse.Namespace) -> None:
+    if args.status == "SUBMITTED" and (not args.brain_alpha_id or not args.evidence_ref):
+        raise ValueError("SUBMITTED requires the BRAIN alpha ID and evidence reference")
+    with database(args.db) as conn:
+        if conn.execute("SELECT 1 FROM candidates WHERE candidate_id = ?",
+                        (args.candidate_id,)).fetchone() is None:
+            raise ValueError(f"unknown candidate: {args.candidate_id}")
+        conn.execute(
+            """INSERT INTO submissions
+               (candidate_id, brain_alpha_id, status, submitted_at, evidence_ref, notes)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (args.candidate_id, args.brain_alpha_id, args.status,
+             args.submitted_at, args.evidence_ref, args.notes),
+        )
+    print(f"Recorded submission status {args.status}; no platform action was taken.")
+
+
 def summary(args: argparse.Namespace) -> None:
     with database(args.db) as conn:
         for table in ("field_inventory", "operator_inventory", "hypotheses", "candidates",
@@ -414,6 +451,32 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--learning")
     result.add_argument("--next-step")
     result.set_defaults(func=record_result)
+
+    corr = commands.add_parser("record-correlation")
+    corr.add_argument("--db", default="data/research.sqlite")
+    corr.add_argument("--candidate-id", required=True)
+    corr.add_argument("--kind", choices=("PAIRWISE", "SELF", "PRODUCTION", "POWER_POOL"),
+                      required=True)
+    corr.add_argument("--compared-to")
+    corr.add_argument("--value", type=float)
+    corr.add_argument("--status", choices=("MEASURED", "PENDING", "UNAVAILABLE",
+                                           "NOT_APPLICABLE"), required=True)
+    corr.add_argument("--observations", type=int)
+    corr.add_argument("--window-start")
+    corr.add_argument("--window-end")
+    corr.add_argument("--source-ref")
+    corr.set_defaults(func=record_correlation)
+
+    submission = commands.add_parser("record-submission")
+    submission.add_argument("--db", default="data/research.sqlite")
+    submission.add_argument("--candidate-id", required=True)
+    submission.add_argument("--brain-alpha-id")
+    submission.add_argument("--status", choices=("NOT_SUBMITTED", "SUBMITTED",
+                                                  "REJECTED", "UNKNOWN"), required=True)
+    submission.add_argument("--submitted-at")
+    submission.add_argument("--evidence-ref")
+    submission.add_argument("--notes")
+    submission.set_defaults(func=record_submission)
     return root
 
 
